@@ -1,0 +1,189 @@
+{% extends "base.html" %}
+
+{% block title %}Biblioteca Universitaria - Optimizacion{% endblock %}
+
+{% block content %}
+<header>
+    <div class="nav-back">
+        <a href="/">&larr; Volver al inicio</a>
+    </div>
+    <h1>Optimizacion de Bibliotecarios</h1>
+    <p>Minimizacion de bibliotecarios con turnos de 8 horas</p>
+</header>
+
+<div class="card">
+    <h2>Descripcion del Problema</h2>
+    <div class="info-box">
+        <h3>PROBLEMA: Biblioteca abierta 24 horas</h3>
+        <p style="margin-top: 10px;"><strong>Turnos de 8 horas comenzando a las:</strong> 12AM, 4AM, 8AM, 12PM, 4PM, 8PM</p>
+        <p style="margin-top: 15px;"><strong>Demanda por periodo (4 horas):</strong></p>
+        <ul style="margin-top: 10px; margin-left: 20px;">
+            <li>12:00 AM - 3:59 AM: 3 bibliotecarios</li>
+            <li>4:00 AM - 7:59 AM: 2 bibliotecarios</li>
+            <li>8:00 AM - 11:59 AM: 10 bibliotecarios</li>
+            <li>12:00 PM - 3:59 PM: 14 bibliotecarios</li>
+            <li>4:00 PM - 7:59 PM: 8 bibliotecarios</li>
+            <li>8:00 PM - 11:59 PM: 10 bibliotecarios</li>
+        </ul>
+    </div>
+    
+    <div style="text-align: center; margin-top: 20px;">
+        <button id="solveBtn" class="btn btn-primary" onclick="solveProblema()">
+            Resolver Problema
+        </button>
+    </div>
+</div>
+
+<div class="loading" id="loading">
+    <div class="spinner"></div>
+    <p>Resolviendo el problema de optimizacion...</p>
+</div>
+
+<div id="results">
+    <div class="card">
+        <h2>Solucion Optima</h2>
+        
+        <div class="result-highlight" id="totalResult">
+            <!-- Total will be inserted here -->
+        </div>
+        
+        <h3 style="margin-top: 20px;">Distribucion de Bibliotecarios por Turno</h3>
+        <table id="distribucionTable">
+            <thead>
+                <tr>
+                    <th>Turno</th>
+                    <th>Bibliotecarios</th>
+                </tr>
+            </thead>
+            <tbody>
+                <!-- Data will be inserted here -->
+            </tbody>
+        </table>
+    </div>
+    
+    <div class="card">
+        <h2>Verificacion de Restricciones</h2>
+        <table id="verificacionTable">
+            <thead>
+                <tr>
+                    <th>Periodo</th>
+                    <th>Cobertura</th>
+                    <th>Demanda</th>
+                    <th>Estado</th>
+                </tr>
+            </thead>
+            <tbody>
+                <!-- Data will be inserted here -->
+            </tbody>
+        </table>
+    </div>
+    
+    <div class="card">
+        <h2>Teorema de Dualidad</h2>
+        <div class="info-box">
+            <p>El valor optimo del primal coincide con el del dual.</p>
+            <p style="margin-top: 10px;">Esto verifica la optimalidad de la solucion.</p>
+        </div>
+    </div>
+    
+    <div class="card">
+        <h2>Graficos de Analisis</h2>
+        <div class="charts-grid">
+            <div id="distributionChart" class="plotly-chart"></div>
+            <div id="comparisonChart" class="plotly-chart"></div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_styles %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/biblioteca.css') }}">
+{% endblock %}
+
+{% block scripts %}
+<script src="https://cdn.plot.ly/plotly-2.35.0.min.js" charset="utf-8"></script>
+<script>
+async function solveProblema() {
+    const solveBtn = document.getElementById('solveBtn');
+    const loading = document.getElementById('loading');
+    const results = document.getElementById('results');
+    
+    // Show loading, hide results
+    solveBtn.disabled = true;
+    loading.classList.add('active');
+    results.classList.remove('active');
+    
+    try {
+        const response = await fetch('/biblioteca/solve', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            }
+        });
+        
+        const data = await response.json();
+        
+        if (data.success) {
+            displayResults(data);
+        } else {
+            alert('Error: ' + data.error);
+        }
+    } catch (error) {
+        alert('Error al resolver el problema: ' + error.message);
+    } finally {
+        solveBtn.disabled = false;
+        loading.classList.remove('active');
+    }
+}
+
+function displayResults(data) {
+    const results = document.getElementById('results');
+    
+    // Display total
+    document.getElementById('totalResult').innerHTML = 
+        `TOTAL MINIMO DE BIBLIOTECARIOS: <strong>${data.total}</strong>`;
+    
+    // Display distribution table
+    const distBody = document.querySelector('#distribucionTable tbody');
+    distBody.innerHTML = '';
+    data.distribucion.forEach(item => {
+        const row = document.createElement('tr');
+        row.innerHTML = `
+            <td>${item.turno}</td>
+            <td><strong>${item.bibliotecarios}</strong></td>
+        `;
+        distBody.appendChild(row);
+    });
+    
+    // Display verification table
+    const verBody = document.querySelector('#verificacionTable tbody');
+    verBody.innerHTML = '';
+    data.verificacion.forEach(item => {
+        const row = document.createElement('tr');
+        const estadoClass = item.cumple ? 'success' : 'error';
+        const estadoText = item.cumple ? 'CUMPLE' : 'NO CUMPLE';
+        row.innerHTML = `
+            <td>${item.periodo}</td>
+            <td>${item.cobertura}</td>
+            <td>${item.demanda}</td>
+            <td class="${estadoClass}">${estadoText}</td>
+        `;
+        verBody.appendChild(row);
+    });
+    
+    // Render Plotly charts
+    const config = {
+        responsive: true,
+        displayModeBar: true,
+        modeBarButtonsToRemove: ['lasso2d', 'select2d'],
+        displaylogo: false
+    };
+    
+    Plotly.newPlot('distributionChart', data.charts.distribution.data, data.charts.distribution.layout, config);
+    Plotly.newPlot('comparisonChart', data.charts.comparison.data, data.charts.comparison.layout, config);
+    
+    // Show results
+    results.classList.add('active');
+}
+</script>
+{% endblock %}

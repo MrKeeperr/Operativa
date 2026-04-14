@@ -1,0 +1,43 @@
+{% extends "base.html" %}
+
+{% block title %}Operativa - Ejercicios de Investigación de Operaciones{% endblock %}
+
+{% block content %}
+<header>
+    <h1>Investigación de Operaciones</h1>
+    <p>Ejercicios de Optimización con Programación Lineal</p>
+</header>
+
+<div class="card">
+    <h2>Ejercicios Disponibles</h2>
+    
+    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 20px; margin-top: 20px;">
+        {% for exercise in exercises %}
+        <div class="exercise-card" style="border: 1px solid #e0e0e0; border-radius: 10px; padding: 20px; transition: all 0.3s;">
+            <span style="background: #667eea; color: white; padding: 5px 10px; border-radius: 5px; font-size: 0.8rem;">{{ exercise.taller }}</span>
+            <h3 style="margin: 15px 0 10px;">{{ exercise.name }}</h3>
+            <p style="color: #666; margin-bottom: 15px;">{{ exercise.description }}</p>
+            <a href="{{ exercise.url }}" class="btn btn-primary" style="display: block; text-align: center;">
+                Ver Ejercicio
+            </a>
+        </div>
+        {% endfor %}
+    </div>
+</div>
+
+<div class="card">
+    <h2>Acerca de este proyecto</h2>
+    <div class="info-box">
+        <h3>Descripcion</h3>
+        <p>Este proyecto contiene ejercicios de Investigación de Operaciones resueltos mediante programación lineal utilizando Python y Flask.</p>
+        <ul style="margin-top: 15px; margin-left: 20px;">
+            <li>Taller 1: Problema de la Biblioteca y Análisis Dual</li>
+            <li>Taller 2: Problema Farmatodo y Problema de la Mochila</li>
+        </ul>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_styles %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/index.css') }}">
+{% endblock %}
